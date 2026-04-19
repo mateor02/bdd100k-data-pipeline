@@ -9,28 +9,53 @@ import pathlib
 
 load_dotenv()
 
+valid_categories = [
+    "car",
+    "truck",
+    "bus",
+    "person",
+    "rider",
+    "bicycle",
+    "motorcycle",
+    "traffic light",
+    "traffic sign",
+    "train",
+]
+
 
 async def extract_s3_object(s3, semaphore, bucket, s3_key):
-    objects = None
+    clip_dict = None
+    objects_list = []
     try:
         async with semaphore:
             response = await s3.get_object(Bucket=bucket, Key=s3_key)
             data = json.loads(await response["Body"].read())
             name = data["name"]
             attributes = data["attributes"]
-            objects = {
+            clip_dict = {
                 "name": name,
                 "timeofday": attributes["timeofday"],
                 "weather": attributes["weather"],
                 "scene": attributes["scene"],
             }
+            for obj in data["frames"][0]["objects"]:
+                if obj["category"] in valid_categories:
+                    objects_list.append(
+                        {
+                            "name": name,
+                            "category": obj["category"],
+                            "occluded": obj["attributes"]["occluded"],
+                            "truncated": obj["attributes"]["truncated"],
+                        }
+                    )
+
             print(f"Extracted file {name} from {bucket}")
 
     except ClientError as err:
         print(f"Couldn't access page")
         print(f"\t{err}")
 
-    return objects
+    return clip_dict, objects_list
 
 
 async def main():
@@ -48,15 +73,26 @@ async def main():
                 tasks.append(extract_s3_object(s3, semaphore, bucket, key["Key"]))
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    df = pl.DataFrame(
-        [r for r in results if r is not None and not isinstance(r, Exception)]
-    )
-    path = pathlib.Path("data/labels.parquet")
-    df.write_parquet(path)
-    return df
+    clips = []
+    objects = []
+    for result in results:
+        if result is not None and not isinstance(result, Exception):
+            clip, objs = result
+            clips.append(clip)
+            objects.extend(objs)
+    clips_df = pl.DataFrame(clips)
+    objects_df = pl.DataFrame(objects)
+    clips_path = pathlib.Path("data/clips.parquet")
+    objects_path = pathlib.Path("data/objects.parquet")
+    clips_df.write_parquet(clips_path)
+    objects_df.write_parquet(objects_path)
+
+    return clips_df, objects_df
+
 
 if __name__ == "__main__":
     import time
+
     start = time.time()
     asyncio.run(main())
     elapsed = time.time() - start
