@@ -7,31 +7,34 @@ from botocore.exceptions import ClientError
 
 load_dotenv()
 
+
 async def files_to_s3(s3, semaphore, bucket, file_path, key):
     async with semaphore:
         try:
             await s3.head_object(Bucket=bucket, Key=key)
             print(f"Key:{key} already exists")
         except ClientError as err:
-            if err.response['Error']['Code'] == "404":
+            if err.response["Error"]["Code"] == "404":
                 await s3.upload_file(Filename=file_path, Bucket=bucket, Key=key)
                 print(f"File: {key} uploaded successfully")
             else:
                 print(f"Unexpected error for {key}: {err}")
                 raise err
-        
+
+
 async def main():
     semaphore = asyncio.Semaphore(250)
     bucket = os.getenv("S3_BUCKET_NAME")
     local_path = Path("data/100k/train")
     session = aioboto3.Session()
     tasks = []
-    
+
     async with session.client("s3") as s3:
         for file in local_path.glob("*"):
             key = f"raw/labels/{file.name}"
             tasks.append(files_to_s3(s3, semaphore, bucket, str(file), key))
         await asyncio.gather(*tasks, return_exceptions=True)
-    
+
+
 if __name__ == "__main__":
     asyncio.run(main())
