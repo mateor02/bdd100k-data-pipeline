@@ -5,27 +5,15 @@ import aioboto3
 import polars as pl
 from botocore.exceptions import ClientError
 import json
-import pathlib
+from io import BytesIO
 
 load_dotenv()
-
-valid_categories = [
-    "car",
-    "truck",
-    "bus",
-    "person",
-    "rider",
-    "bicycle",
-    "motorcycle",
-    "traffic light",
-    "traffic sign",
-    "train",
-]
 
 
 async def extract_s3_object(s3, semaphore, bucket, s3_key):
     clip_dict = None
     objects_list = []
+    segmentation_list = []
     try:
         async with semaphore:
             response = await s3.get_object(Bucket=bucket, Key=s3_key)
@@ -39,23 +27,47 @@ async def extract_s3_object(s3, semaphore, bucket, s3_key):
                 "scene": attributes["scene"],
             }
             for obj in data["frames"][0]["objects"]:
-                if obj["category"] in valid_categories:
+                if "box2d" in obj:
                     objects_list.append(
                         {
                             "name": name,
                             "category": obj["category"],
+                            "id": obj["id"],
                             "occluded": obj["attributes"]["occluded"],
                             "truncated": obj["attributes"]["truncated"],
+                            "trafficLightColor": obj["attributes"]["trafficLightColor"],
+                            "x1": obj["box2d"]["x1"],
+                            "y1": obj["box2d"]["y1"],
+                            "x2": obj["box2d"]["x2"],
+                            "y2": obj["box2d"]["y2"],
                         }
                     )
-
-            print(f"Extracted file {name} from {bucket}")
+                elif "poly2d" in obj:
+                    segmentation_list.append(
+                        {
+                            "name": name,
+                            "category": obj["category"],
+                            "id": obj["id"],
+                            "direction": obj["attributes"].get("direction"),
+                            "style": obj["attributes"].get("style"),
+                            "poly2d": json.dumps(obj["poly2d"]),
+                        }
+                    )
 
     except ClientError as err:
         print(f"Couldn't access page")
         print(f"\t{err}")
 
-    return clip_dict, objects_list
+    return clip_dict, objects_list, segmentation_list
+
+
+async def upload_parquet_to_s3(s3, df, bucket, name):
+    buffer = BytesIO()
+    df.write_parquet(buffer)
+    buffer.seek(0)
+    await s3.put_object(
+        Bucket=bucket, Key=f"processed/{name}/{name}.parquet", Body=buffer.getvalue()
+    )
 
 
 async def main():
@@ -66,28 +78,41 @@ async def main():
 
     async with session.client("s3") as s3:
         paginator = s3.get_paginator("list_objects_v2")
-        pages = paginator.paginate(Bucket=bucket, Prefix="raw/labels")
+        limit = int(os.getenv("MAX_ITEMS", 0))
+        pagination_config = {"MaxItems": limit} if limit else {}
+        pages = paginator.paginate(
+            Bucket=bucket, Prefix="raw/labels", PaginationConfig=pagination_config
+        )
         async for page in pages:
             contents = page.get("Contents", [])
             for key in contents:
                 tasks.append(extract_s3_object(s3, semaphore, bucket, key["Key"]))
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    clips = []
-    objects = []
-    for result in results:
-        if result is not None and not isinstance(result, Exception):
-            clip, objs = result
-            clips.append(clip)
-            objects.extend(objs)
-    clips_df = pl.DataFrame(clips)
-    objects_df = pl.DataFrame(objects)
-    clips_path = pathlib.Path("data/clips.parquet")
-    objects_path = pathlib.Path("data/objects.parquet")
-    clips_df.write_parquet(clips_path)
-    objects_df.write_parquet(objects_path)
+        clips = []
+        objects = []
+        segmentations = []
+        for i, result in enumerate(results):
+            if result is not None and not isinstance(result, Exception):
+                clip, objs, seg = result
+                clips.append(clip)
+                objects.extend(objs)
+                segmentations.extend(seg)
+                if (i + 1) % 1000 == 0:
+                    print(f"Processed {i + 1} files...")
+        clips_df = pl.DataFrame(clips)
+        objects_df = pl.DataFrame(objects)
+        segmentations_df = pl.DataFrame(segmentations)
 
-    return clips_df, objects_df
+        await upload_parquet_to_s3(s3, clips_df, bucket, "clips")
+        await upload_parquet_to_s3(s3, objects_df, bucket, "objects")
+        await upload_parquet_to_s3(s3, segmentations_df, bucket, "segmentations")
+
+        print(
+            f"Extracted {len(clips)} clips, {len(objects)} objects, {len(segmentations)} segmentations"
+        )
+
+    return clips_df, objects_df, segmentations_df
 
 
 if __name__ == "__main__":
