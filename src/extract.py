@@ -6,6 +6,7 @@ import polars as pl
 from botocore.exceptions import ClientError
 import json
 from io import BytesIO
+from utils.s3 import upload_parquet_to_s3_async
 
 load_dotenv()
 
@@ -61,15 +62,6 @@ async def extract_s3_object(s3, semaphore, bucket, s3_key):
     return clip_dict, objects_list, segmentation_list
 
 
-async def upload_parquet_to_s3(s3, df, bucket, name):
-    buffer = BytesIO()
-    df.write_parquet(buffer)
-    buffer.seek(0)
-    await s3.put_object(
-        Bucket=bucket, Key=f"processed/{name}/{name}.parquet", Body=buffer.getvalue()
-    )
-
-
 async def main():
     session = aioboto3.Session()
     semaphore = asyncio.Semaphore(250)
@@ -104,9 +96,18 @@ async def main():
         objects_df = pl.DataFrame(objects)
         segmentations_df = pl.DataFrame(segmentations)
 
-        await upload_parquet_to_s3(s3, clips_df, bucket, "clips")
-        await upload_parquet_to_s3(s3, objects_df, bucket, "objects")
-        await upload_parquet_to_s3(s3, segmentations_df, bucket, "segmentations")
+        await upload_parquet_to_s3_async(
+            s3, clips_df, bucket, "processed/clips/clips.parquet"
+        )
+        await upload_parquet_to_s3_async(
+            s3, objects_df, bucket, "processed/objects/objects"
+        )
+        await upload_parquet_to_s3_async(
+            s3,
+            segmentations_df,
+            bucket,
+            "processed/segmentations/segmentations.parquet",
+        )
 
         print(
             f"Extracted {len(clips)} clips, {len(objects)} objects, {len(segmentations)} segmentations"

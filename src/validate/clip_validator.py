@@ -1,8 +1,13 @@
 from models.clip import TimeOfDay, Weather, Scene, Clip
 import polars as pl
 from pydantic import ValidationError
-from pathlib import Path
 import logging
+from utils.s3 import read_parquet_from_s3, upload_parquet_to_s3_sync
+import boto3
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -12,9 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 def validate():
+    s3 = boto3.Session().client("s3")
+    bucket = os.getenv("S3_BUCKET_NAME")
     clean = []
     quarantine = []
-    clips_df = pl.read_parquet("data/clips.parquet")
+    clips_df = read_parquet_from_s3(s3, bucket, "processed/clips/clips.parquet")
     for row in clips_df.iter_rows(named=True):
         try:
             Clip(**row)
@@ -30,12 +37,13 @@ def validate():
     clean_attributes, quarantine_attributes = pl.DataFrame(clean), pl.DataFrame(
         quarantine
     )
-    clean_path, quarantine_path = Path("data/clean.parquet"), Path(
-        "data/quarantine.parquet"
-    )
-    clean_attributes.write_parquet(clean_path)
-    quarantine_attributes.write_parquet(quarantine_path)
 
+    upload_parquet_to_s3_sync(
+        s3, clean_attributes, bucket, "validated/clean/clips.parquet"
+    )
+    upload_parquet_to_s3_sync(
+        s3, quarantine_attributes, bucket, "validated/quarantine/clips.parquet"
+    )
     return clean_attributes, quarantine_attributes
 
 
