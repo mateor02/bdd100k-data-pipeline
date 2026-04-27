@@ -1,6 +1,7 @@
 from enum import Enum
 from pydantic import BaseModel
 
+
 class TimeOfDay(Enum):
     DAYTIME = "daytime"
     NIGHT = "night"
@@ -23,11 +24,10 @@ class Scene(Enum):
     CITY_STREET = "city street"
     GAS_STATIONS = "gas stations"
     TUNNEL = "tunnel"
-    
+
 
 class Clip(BaseModel):
     name: str
     weather: Weather
     scene: Scene
     timeofday: TimeOfDay
-    
