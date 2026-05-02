@@ -28,7 +28,7 @@ class Object(BaseModel):
     id: int
     occluded: bool
     truncated: bool
-    trafficlightcolor: TrafficLightColor
+    trafficLightColor: TrafficLightColor
     x1: float
     y1: float
     x2: float
