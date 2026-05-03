@@ -22,11 +22,11 @@ def validate_segmentations():
     clean_segmentations, quarantine_segmentations = validator(segmentations_df, Segmentation)
 
     upload_parquet_to_s3_sync(
-        s3, clean_segmentations, bucket, "validated/clean/segmentations.parquet"
+        s3, clean_segmentations, bucket, "validated/clean/segmentations/segmentations.parquet"
     )
 
     upload_parquet_to_s3_sync(
-        s3, quarantine_segmentations, bucket, "validated/quarantine/segmentations.parquet",
+        s3, quarantine_segmentations, bucket, "validated/quarantine/segmentations/segmentations.parquet",
     )
 
 

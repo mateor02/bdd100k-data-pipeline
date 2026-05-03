@@ -23,11 +23,11 @@ def validate_objects():
     clean_objects, quarantine_objects = validator(objects_df, Object)
 
     upload_parquet_to_s3_sync(
-        s3, clean_objects, bucket, "validated/clean/objects.parquet"
+        s3, clean_objects, bucket, "validated/clean/objects/objects.parquet"
     )
 
     upload_parquet_to_s3_sync(
-        s3, quarantine_objects, bucket, "validated/quarantine/objects.parquet"
+        s3, quarantine_objects, bucket, "validated/quarantine/objects/objects.parquet"
     )
 
 

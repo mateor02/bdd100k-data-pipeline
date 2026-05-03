@@ -22,10 +22,10 @@ def validate_clips():
     clean_attributes, quarantine_attributes = validator(clips_df, Clip)
 
     upload_parquet_to_s3_sync(
-        s3, clean_attributes, bucket, "validated/clean/clips.parquet"
+        s3, clean_attributes, bucket, "validated/clean/clips/clips.parquet"
     )
     upload_parquet_to_s3_sync(
-        s3, quarantine_attributes, bucket, "validated/quarantine/clips.parquet"
+        s3, quarantine_attributes, bucket, "validated/quarantine/clips/clips.parquet"
     )
 
 
