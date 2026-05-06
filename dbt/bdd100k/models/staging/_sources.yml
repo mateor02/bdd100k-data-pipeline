@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: bdd100k_labels
+    database: awsdatacatalog
+    schema: bdd100k_labels_db
+    tables:
+      - name: clips
+      - name: objects
+      - name: segmentations
+
+      
