@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: stg_clips
+    description: "Staged clips"
+    columns:
+      - name: clip_id
+        description: "unique identifier for each clip (primary key)"
+        tests:
+          - not_null
+          - unique
+
+      - name: time_of_day
+        description: "time of day during clip"
+        tests:
+          - accepted_values:
+              values: ['dawn/dusk', 'daytime', 'night']
+      
+      - name: weather
+        description: "weather during clip"
+        tests:
+          - accepted_values:
+              values: ['clear', 'rainy', 'snowy', 'overcast', 'partly cloudy', 'foggy']
+      
+      - name: scene_type
+        description: "setting of clip"
+        tests:
+          - accepted_values:
+              values: ['tunnel', 'city street', 'highway', 'residential', 'gas stations', 'parking lot']
+  
+
+  - name: stg_objects
+    description: "Staged objects"
+    columns:
+      - name: clip_id
+        description: "Foreign key to stg_clips. The clip this object was detected in."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_clips')
+              field: clip_id
+      - name: object_category
+        description: "Identified object in clip."
+        tests:
+          - accepted_values:
+              values: ['traffic light', 'traffic sign', 'person', 'truck', 'rider', 'car', 'bus', 'train']
+      - name: object_id
+        description: "Identifier for each annotated object in clip."
+        tests:
+          - not_null
+          
+      
+
+              
