@@ -6,6 +6,7 @@ class TimeOfDay(Enum):
     DAYTIME = "daytime"
     NIGHT = "night"
     DAWN_DUSK = "dawn/dusk"
+    UNDEFINED = "undefined"
 
 
 class Weather(Enum):
@@ -15,6 +16,7 @@ class Weather(Enum):
     OVERCAST = "overcast"
     RAINY = "rainy"
     FOGGY = "foggy"
+    UNDEFINED = "undefined"
 
 
 class Scene(Enum):
@@ -24,6 +26,7 @@ class Scene(Enum):
     CITY_STREET = "city street"
     GAS_STATIONS = "gas stations"
     TUNNEL = "tunnel"
+    UNDEFINED = "undefined"
 
 
 class Clip(BaseModel):
