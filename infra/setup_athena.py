@@ -11,17 +11,32 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-athena = boto3.client("athena", region_name=os.getenv("AWS_REGION"))
 
-try:
-    response = athena.create_work_group(
-        Name='bdd100k_athena',
-        Configuration={
-            'ResultConfiguration': {
-                'OutputLocation': f"s3://{os.getenv('S3_BUCKET_NAME')}/athena-results/"
-            }
-        }
-    )
-except athena.exceptions.InvalidRequestExceptoin:
-    logger.info("Athena client already exists, skipping creation")
-    
+def create_workgroup_if_not_exists(
+    athena, workgroup_name: str, output_location: str
+) -> None:
+
+    try:
+        athena.create_work_group(
+            Name=workgroup_name,
+            Configuration={"ResultConfiguration": {"OutputLocation": output_location}},
+        )
+        logger.info("Workgroup created: %s", workgroup_name)
+
+    except athena.exceptions.InvalidRequestException as err:
+        if "already exists" in str(err):
+            logger.info("Workgroup already exists, skipping creation")
+        else:
+            raise
+
+
+def main():
+    athena = boto3.client("athena", region_name=os.getenv("AWS_REGION"))
+    name = "bdd100k_athena"
+    output_location = f"s3://{os.getenv('S3_BUCKET_NAME')}/athena-results/"
+
+    create_workgroup_if_not_exists(athena, name, output_location)
+
+
+if __name__ == "__main__":
+    main()
