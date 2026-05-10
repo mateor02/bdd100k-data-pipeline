@@ -2,7 +2,7 @@ with source as (
     select * from {{ source('bdd100k_labels', 'objects')  }}
 ),
 
-cleaned as (
+renamed as (
     select
         name as clip_id,
         case
@@ -21,4 +21,4 @@ cleaned as (
     from source
 )
 
-select * from cleaned
+select * from renamed

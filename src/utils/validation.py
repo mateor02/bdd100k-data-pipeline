@@ -23,9 +23,7 @@ def validator(df, model):
         f"{model.__name__} rows that passed validation: {len(clean)} | {model.__name__} rows that didn't pass validation: {len(quarantine)}"
     )
 
-    clean_attributes, quarantine_attributes = pl.DataFrame(clean), pl.DataFrame(
-        quarantine
-    )
+    clean_attributes, quarantine_attributes = pl.DataFrame(clean), pl.DataFrame(quarantine)
 
     elapsed = time.time() - start
     logger.info(f"validation completed in {elapsed:.2f}s")

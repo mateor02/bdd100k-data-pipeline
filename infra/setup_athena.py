@@ -12,9 +12,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_workgroup_if_not_exists(
-    athena, workgroup_name: str, output_location: str
-) -> None:
+def create_workgroup_if_not_exists(athena, workgroup_name: str, output_location: str) -> None:
 
     try:
         athena.create_work_group(

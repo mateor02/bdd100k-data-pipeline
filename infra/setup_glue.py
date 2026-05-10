@@ -26,9 +26,7 @@ def create_database_if_not_exists(glue, name: str, database_description: str) ->
         logger.info("Database already exists, skipping creation")
 
 
-def create_crawler_if_not_exists(
-    glue, name: str, role: str, database: str, crawler_description: str, s3_path: str
-) -> None:
+def create_crawler_if_not_exists(glue, name: str, role: str, database: str, crawler_description: str, s3_path: str) -> None:
     try:
         response = glue.create_crawler(
             Name=name,

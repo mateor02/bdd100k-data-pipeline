@@ -2,53 +2,140 @@ version: 2
 
 models:
   - name: stg_clips
-    description: "Staged clips"
+    description: "Cleaned clip-level metadata. One row per dashcam clip with weather, time of day, and scene attributes."
     columns:
       - name: clip_id
-        description: "unique identifier for each clip (primary key)"
+        description: "Unique identifier for each clip. Primary key."
         tests:
           - not_null
           - unique
 
       - name: time_of_day
-        description: "time of day during clip"
+        description: "Time of day when the clip was recorded. 'undefined' means the labeler couldn't determine."
         tests:
           - accepted_values:
-              values: ['dawn/dusk', 'daytime', 'night']
+              arguments:
+                values: ['dawn/dusk', 'daytime', 'night', 'undefined']
       
       - name: weather
-        description: "weather during clip"
+        description: "Weather conditions during clip recording. 'undefined' means the labeler couldn't determine."
         tests:
           - accepted_values:
-              values: ['clear', 'rainy', 'snowy', 'overcast', 'partly cloudy', 'foggy']
+              arguments:
+                values: ['clear', 'rainy', 'snowy', 'overcast', 'partly cloudy', 'foggy', 'undefined']
       
       - name: scene_type
-        description: "setting of clip"
+        description: "Setting/Environment of the clip (e.g., highway, city street, parking lot). 'undefined' means the labeler couldn't determine."
         tests:
           - accepted_values:
-              values: ['tunnel', 'city street', 'highway', 'residential', 'gas stations', 'parking lot']
+              arguments:
+                values: ['tunnel', 'city street', 'highway', 'residential', 'gas stations', 'parking lot', 'undefined']
   
 
   - name: stg_objects
-    description: "Staged objects"
+    description: "Cleaned object detection records. One row per detected object per clip, with bounding boxes and category attributes. Includes bike->bicycle normalization."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - clip_id
+              - object_id
     columns:
       - name: clip_id
         description: "Foreign key to stg_clips. The clip this object was detected in."
         tests:
           - not_null
           - relationships:
-              to: ref('stg_clips')
-              field: clip_id
+              arguments:
+                to: ref('stg_clips')
+                field: clip_id
+              
       - name: object_category
-        description: "Identified object in clip."
-        tests:
-          - accepted_values:
-              values: ['traffic light', 'traffic sign', 'person', 'truck', 'rider', 'car', 'bus', 'train']
-      - name: object_id
-        description: "Identifier for each annotated object in clip."
+        description: "Type of detected object. Normalized for raw values ('bike' -> bicycle, 'motor' -> 'motorcycle')."
         tests:
           - not_null
-          
+          - accepted_values:
+              arguments:
+                  values: ['traffic light', 'traffic sign', 'person', 'truck', 'rider', 'car', 'bus', 'train', 'motorcycle', 'bicycle']
       
+      - name: object_id
+        description: "Sequential identifier for object within a clip. Not globally unique - only unique within a clip."
+        tests:
+          - not_null
+      
+      - name: is_occluded
+        description: "Whether the object is partially hidden by another object."
+        tests:
+          - not_null
 
+      - name: is_truncated
+        description: "Whether the objects extend beyond the image frame."
+        tests:
+          - not_null
+
+      - name: traffic_light_color
+        description: "Color of traffic light when object_category is 'traffic light'. 'none' for all other categories."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['red', 'green', 'yellow', 'none']
               
+      - name: bbox_x_min
+        description: "Left edge of bounding box in pixel coordinates (x increases right)."
+
+      - name: bbox_y_min
+        description: "Top edge of bounding box in pixel coordinates (y increases down)."
+
+      - name: bbox_x_max
+        description: "Right edge of bounding box in pixel coordinates."
+
+      - name: bbox_y_max
+        description: "Bottom edge of bounding box in pixel coordinates."
+  
+  
+  - name: stg_segmentations
+    description: "Cleaned semantic segmentation records. One row per segmented region per clip. Includes lane lines, road curbs, drivable areas, and crosswalks. Lane attributes (direction, style) are NULL for non-lane segmentations."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - clip_id
+              - segmentation_id
+    columns:
+      - name: clip_id
+        description: "Foreign key to stg_clips. The clip this segmentation was identified in."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_clips')
+                field: clip_id
+
+      - name: segmentation_type
+        description: "Type of segmented region (e.g., 'lane/single white', 'area/drivable', 'lane/road curb')."
+        tests:
+          - not_null
+
+      - name: segmentation_id
+        description: "Sequential identifier for each segmentation within a clip. Not globally unique - only unique within a clip."
+        tests:
+          - not_null
+
+      - name: lane_direction
+        description: "Direction of the lane line relative to vehicle ('parallel' or 'vertical'). NULL for non-lane segmentations like drivable areas."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['parallel', 'vertical']
+              config:
+                  where: "lane_direction is not null"
+      
+      - name: lane_style
+        description: "Style of the lane line ('solid' or 'dashed'). NULL for non-lane segmentations."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['solid', 'dashed']
+              config:
+                  where: "lane_style is not null"
