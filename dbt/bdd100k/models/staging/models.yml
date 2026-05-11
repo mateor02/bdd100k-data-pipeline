@@ -139,3 +139,159 @@ models:
                 values: ['solid', 'dashed']
               config:
                   where: "lane_style is not null"
+  
+
+  - name: fct_clip_summary
+    description: "One row per clip with all aggregated metrics. Joins clip attributes with object and segmentation counts. Designed to support labeling-pipeline coverage analysis and downstream dashboards."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - clip_id
+    columns:
+      - name: clip_id
+        description: "Unique identifier for each clip. Primary key. Foreign key to stg_clips."
+        tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('stg_clips')
+                field: clip_id
+
+      - name: time_of_day
+        description: "Time of day when the clip was recorded. 'undefined' means the labeler couldn't determine."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['dawn/dusk', 'daytime', 'night', 'undefined']
+
+      - name: weather
+        description: "Weather conditions during clip recording. 'undefined' means the labeler couldn't determine."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['clear', 'rainy', 'snowy', 'overcast', 'partly cloudy', 'foggy', 'undefined']
+
+      - name: scene_type
+        description: "Setting/Environment of the clip (e.g., highway, city street, parking lot). 'undefined' means the labeler couldn't determine."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['tunnel', 'city street', 'highway', 'residential', 'gas stations', 'parking lot', 'undefined']
+
+      - name: total_objects
+        description: "Total count of all labeled objects in the clip across all categories."
+        tests:
+          - not_null
+
+      - name: total_cars
+        description: "Count of objects labeled 'car'. Subset of total_objects."
+        tests:
+          - not_null
+
+      - name: total_trucks
+        description: "Count of objects labeled 'truck'. Subset of total_objects."
+        tests:
+          - not_null
+
+      - name: total_buses
+        description: "Count of objects labeled 'bus'. Subset of total_objects."
+        tests:
+          - not_null
+
+      - name: total_trains
+        description: "Count of objects labeled 'train'. Subset of total_objects. Rare across the dataset (~136 total)."
+        tests:
+          - not_null
+
+      - name: total_pedestrians
+        description: "Count of objects labeled 'person'. Subset of total_objects."
+        tests:
+          - not_null
+
+      - name: total_cyclists
+        description: "Count of objects labeled 'rider' (humans on bicycles or motorcycles). Excludes the bikes themselves, which are labeled separately."
+        tests:
+          - not_null
+
+      - name: avg_bbox_area_pixels
+        description: "Mean bounding box area across all objects in the clip, in pixel² units. NULL for clips with zero objects."
+
+      - name: total_segmentations
+        description: "Total count of all labeled segmentations in the clip across all types."
+        tests:
+          - not_null
+
+      - name: total_lane_lines
+        description: "Count of lane-line segmentations (excludes curbs and crosswalks). Subset of total_segmentations."
+        tests:
+          - not_null
+
+      - name: total_drivable_areas
+        description: "Count of drivable-area segmentations (area/drivable, area/alternative, area/unknown). Subset of total_segmentations."
+        tests:
+          - not_null
+
+      - name: total_pedestrian_infrastructure
+        description: "Count of segmentations marking pedestrian-related road features (curbs and crosswalks). Useful for identifying clips where pedestrians could potentially appear. Subset of total_segmentations."
+        tests:
+          - not_null
+
+
+  - name: fct_dataset_distribution
+    description: "Aggregated coverage analysis at the (weather, time_of_day, scene_type) level. One row per unique environmental combination present in the dataset. Designed to surface coverage gaps and over-represented conditions for labeling pipeline decision-making."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - weather
+              - time_of_day
+              - scene_type
+    columns:
+      - name: weather
+        description: "Weather condition. 'undefined' means the labeler couldn't determine."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['clear', 'rainy', 'snowy', 'overcast', 'partly cloudy', 'foggy', 'undefined']
+
+      - name: time_of_day
+        description: "Time of day. 'undefined' means the labeler couldn't determine."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['dawn/dusk', 'daytime', 'night', 'undefined']
+
+      - name: scene_type
+        description: "Setting/Environment. 'undefined' means the labeler couldn't determine."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['tunnel', 'city street', 'highway', 'residential', 'gas stations', 'parking lot', 'undefined']
+
+      - name: clip_count
+        description: "Number of clips in this environmental combination."
+        tests:
+          - not_null
+
+      - name: total_objects
+        description: "Total labeled objects across all clips in this combination."
+        tests:
+          - not_null
+
+      - name: avg_objects_per_clip
+        description: "Average number of objects per clip in this combination. Useful for comparing annotation density across conditions."
+        tests:
+          - not_null
+
+      - name: pct_of_dataset
+        description: "Percentage of total clips that fall into this combination. Sums to ~100 across all rows."
+        tests:
+          - not_null
