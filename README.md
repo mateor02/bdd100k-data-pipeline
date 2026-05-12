@@ -97,6 +97,8 @@ A few decisions worth calling out, because they reflect real architectural think
 ---
 
 ## Repository Structure
+
+```
 bdd100k-data-pipeline/
 ├── src/
 │   ├── ingest.py                   # Local JSONs → S3 (one-time bootstrap)
@@ -115,7 +117,7 @@ bdd100k-data-pipeline/
 │       └── marts/                  # fct_clip_summary, fct_dataset_distribution
 ├── pyproject.toml
 └── uv.lock
-
+```
 ---
 
 ## Setup
