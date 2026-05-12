@@ -9,29 +9,31 @@ The project is designed around the questions a labeling ops team actually asks: 
 ---
 
 ## Architecture
-BDD100K JSONs (local)
-│
-▼   async upload via aioboto3
-S3: raw/labels/                              ← 70K JSON files
-│
-▼   Polars-based async extraction
-S3: processed/                               ← clips, objects, segmentations parquet
-│
-▼   Pydantic v2 schema validation
-S3: validated/clean/    +    quarantine/     ← contract-enforced data
-│
-▼   AWS Glue Crawler
-Glue Catalog → Athena (SQL access)
-│
-▼   dbt-athena (staging views + mart tables)
-bdd100k_dbt schema:
-├── stg_clips, stg_objects, stg_segmentations
-├── fct_clip_summary (per-clip metrics)
-└── fct_dataset_distribution (coverage analysis)
-│
-▼   queries via pyathena
-Streamlit dashboard (in progress)
 
+```
+BDD100K JSONs (local)
+        │
+        ▼   async upload via aioboto3
+   S3: raw/labels/                              ← 70K JSON files
+        │
+        ▼   Polars-based async extraction
+   S3: processed/                               ← clips, objects, segmentations parquet
+        │
+        ▼   Pydantic v2 schema validation
+   S3: validated/clean/    +    quarantine/     ← contract-enforced data
+        │
+        ▼   AWS Glue Crawler
+   Glue Catalog → Athena (SQL access)
+        │
+        ▼   dbt-athena (staging views + mart tables)
+   bdd100k_dbt schema:
+     ├── stg_clips, stg_objects, stg_segmentations
+     ├── fct_clip_summary (per-clip metrics)
+     └── fct_dataset_distribution (coverage analysis)
+        │
+        ▼   queries via pyathena
+   Streamlit dashboard (in progress)
+```
 ---
 
 ## Stack
