@@ -8,6 +8,78 @@ The project is designed around the questions a labeling ops team actually asks: 
 
 ---
 
+## What the Data Looks Like
+
+Each BDD100K clip is a single dashcam frame paired with a JSON file containing object detections, segmentation polygons, and clip-level scene attributes (weather, time of day, scene type).
+
+![Example annotated BDD100K frames](docs/annotation_examples.png)
+
+*Example BDD100K frames with labeled bounding boxes and segmentation polygons. Source: [BDD100K](https://www.vis.xyz/bdd100k/).*
+
+Here's an abridged version of what the raw JSON looks like — one object detection (a car), one lane line, and one drivable area:
+
+```json
+{
+    "name": "cabc30fc-e7726578",
+    "attributes": {
+        "weather": "clear",
+        "scene": "city street",
+        "timeofday": "dawn/dusk"
+    },
+    "frames": [
+        {
+            "timestamp": 10000,
+            "objects": [
+                {
+                    "category": "car",
+                    "id": 6,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 654.6,
+                        "y1": 414.1,
+                        "x2": 734.8,
+                        "y2": 487.6
+                    }
+                },
+                {
+                    "category": "lane/single white",
+                    "id": 14,
+                    "attributes": {
+                        "direction": "parallel",
+                        "style": "dashed"
+                    },
+                    "poly2d": [
+                        [399.9, 653.0, "L"],
+                        [651.5, 464.3, "L"]
+                    ]
+                },
+                {
+                    "category": "area/drivable",
+                    "id": 9,
+                    "attributes": {},
+                    "poly2d": [
+                        [633.4, 489.7, "L"],
+                        [434.3, 646.6, "L"],
+                        [511.3, 644.6, "C"],
+                        [955.7, 643.3, "L"],
+                        [778.5, 489.7, "L"],
+                        [633.4, 489.7, "L"]
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
+
+Each clip contains many such labels — typically 10–40 objects plus 5–15 segmentations per frame. The pipeline ingests 70K of these JSON files, flattens them into normalized parquet datasets (one row per object, one per segmentation, one per clip), and exposes them through Athena and dbt for downstream analytics.
+
+---
+
 ## Architecture
 
 ```
