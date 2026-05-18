@@ -139,15 +139,14 @@ BDD100K JSONs (local)
   - `fct_dataset_distribution`: coverage analysis across (weather, time-of-day, scene type) combinations
 - **54 automated dbt tests** covering not-null constraints, uniqueness, foreign key relationships, accepted categorical values, and combination uniqueness — all passing
 - **Comprehensive YAML documentation** for every model and column
+- **Streamlit dashboard** querying the dbt marts via Athena — coverage analysis views, per-clip exploration, filtering by environmental attributes
 
 ### 🚧 In Progress
 
-- **Streamlit dashboard** querying the dbt marts via Athena — coverage analysis views, per-clip exploration, filtering by environmental attributes
+- **Docker Compose** stack containerizing the pipeline for local reproducibility
 
 ### 📋 Planned
 
-- **Apache Airflow** orchestration of the full pipeline (ingest → validate → catalog → dbt run → tests)
-- **Docker Compose** stack containerizing the pipeline for local reproducibility
 - **ML preprocessing extension**: rasterize segmentation polygons into per-pixel masks for downstream semantic segmentation training
 
 ---
