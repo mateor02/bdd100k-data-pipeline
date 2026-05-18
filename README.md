@@ -1,5 +1,7 @@
 # BDD100K Autonomous Vehicle Data Pipeline
 
+**Live dashboard: [bdd100k-data-pipeline.streamlit.app](https://bdd100k-data-pipeline.streamlit.app/)**
+
 End-to-end ELT pipeline simulating a real-world labeling workflow for autonomous vehicle perception models. Built on the [BDD100K](https://www.vis.xyz/bdd100k/) dashcam dataset from UC Berkeley — 70K driving clips with detection, segmentation, and scene attribute labels.
 
 I currently work as a data labeler at Tesla, where I annotate ground-truth data that feeds Autopilot's training pipelines. The work made me genuinely curious about what happens to the data *after* it leaves my queue — how labeled clips get validated, transformed, cataloged, and surfaced as training and evaluation data. This project is my attempt to build that side of the pipeline myself, end-to-end. It covers only one slice (labeled clip metadata, not the raw video — yet), but it's been a great way to learn how the work I see every day fits into a larger system.
@@ -103,8 +105,12 @@ BDD100K JSONs (local)
      ├── fct_clip_summary (per-clip metrics)
      └── fct_dataset_distribution (coverage analysis)
         │
-        ▼   queries via pyathena
-   Streamlit dashboard (in progress)
+        ▼   queries via pyathena + SQLAlchemy
+   Streamlit Dashboard (live)
+     ├── Landing: dataset overview + project context
+     ├── Coverage Analysis: heatmap + distribution charts with sidebar filtering
+     └── Clip Explorer: 70K clips with multi-dimensional filtering, VRU metrics, QA table
+QA table
 ```
 ---
 
@@ -118,8 +124,8 @@ BDD100K JSONs (local)
 | **Storage** | AWS S3 (parquet) |
 | **Catalog & Query** | AWS Glue, AWS Athena |
 | **Transformation** | dbt-athena, dbt-utils |
-| **Dashboard** *(planned)* | Streamlit |
-| **Orchestration** *(planned)* | Apache Airflow |
+| **Dashboard** | Streamlit, Plotly, pyathena + SQLAlchemy |
+| **Deployment** | Streamlit Community Cloud |
 | **Containerization** *(planned)* | Docker, Docker Compose |
 | **Package Management** | uv |
 
@@ -139,7 +145,10 @@ BDD100K JSONs (local)
   - `fct_dataset_distribution`: coverage analysis across (weather, time-of-day, scene type) combinations
 - **54 automated dbt tests** covering not-null constraints, uniqueness, foreign key relationships, accepted categorical values, and combination uniqueness — all passing
 - **Comprehensive YAML documentation** for every model and column
-- **Streamlit dashboard** querying the dbt marts via Athena — coverage analysis views, per-clip exploration, filtering by environmental attributes
+- **Interactive Streamlit dashboard** deployed to Streamlit Community Cloud, querying the dbt marts via Athena through SQLAlchemy + pyathena. Includes:
+  - **Coverage analysis page**: dimension-selectable heatmap (log-scaled colors) + per-dimension distribution bar charts with hover-revealed dataset percentages
+  - **Clip explorer page**: filterable per-clip view with summary metrics (with comparison-to-baseline deltas), annotation density histogram, dedicated Vulnerable Road Users (VRU) section, and QA candidate identification
+  - Full sidebar interactivity: multi-dimensional filtering that propagates across all charts and metrics
 
 ### 🚧 In Progress
 
@@ -184,7 +193,14 @@ bdd100k-data-pipeline/
 │   ├── dbt_project.yml
 │   ├── packages.yml                # dbt-utils dependency
 │   └── models/
-│       ├── staging/                # stg_clips, stg_objects, stg_segmentations + sources YAML + models YAML
+│       ├── staging/                # stg_clips, stg_objects, stg_segmentations + sources YAML + models 
+├── dashboard/
+│   ├── streamlit_app.py            # Landing page: dataset overview, page index, tech stack
+│   ├── queries.py                  # Cached Athena query functions (uses st.secrets for credentials)
+│   └── pages/
+│       ├── 1_Coverage.py           # Heatmap + distribution charts with dimension selector
+│       └── 2_Clip_Explorer.py      # Per-clip filtering, VRU section, QA candidates table
+YAML
 │       └── marts/                  # fct_clip_summary, fct_dataset_distribution
 ├── pyproject.toml
 └── uv.lock
