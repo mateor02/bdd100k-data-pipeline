@@ -10,8 +10,19 @@ import numpy as np
 
 st.header("Dataset Coverage Analysis", divider=True)
 
+st.markdown(
+    """
+    This page analyzes how clips are distributed across environmental conditions —
+    weather, time of day, and scene type. Use the sidebar to switch the heatmap's
+    cross-tabulation dimensions or filter by weather; all charts respond.
+
+    Coverage gaps revealed here inform labeling prioritization: a perception model
+    trained on imbalanced data performs unpredictably in under-represented conditions.
+    """
+)
+
 df = get_dataset_distribution(get_connection())
-selected_values = df['weather'].unique()
+weather_options = df['weather'].unique()
 
 with st.sidebar: 
     selected = st.selectbox(
@@ -20,12 +31,12 @@ with st.sidebar:
         format_func=lambda x: f"{x[0]} × {x[1]}"
     )
     
-    weather_options = st.multiselect(
+    selected_values = st.multiselect(
         label="Filter by weather",
-        options=selected_values,
-        default=selected_values
+        options=weather_options,
+        default=weather_options
     )
-filtered_df = df[df['weather'].isin(weather_options)]
+filtered_df = df[df['weather'].isin(selected_values)]
 index_col, columns_col = selected
 
 table = pd.pivot_table(filtered_df, values='clip_count', index=index_col, columns=columns_col, aggfunc='sum', fill_value=0)
@@ -33,8 +44,6 @@ table = pd.pivot_table(filtered_df, values='clip_count', index=index_col, column
 
 st.subheader("Dataset distribution heat map")
 st.plotly_chart(px.imshow(table, color_continuous_scale='Viridis'))
-
-
 
 
 

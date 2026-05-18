@@ -19,4 +19,8 @@ def get_dataset_distribution(_conn):
     df = pd.read_sql("SELECT * FROM fct_dataset_distribution", _conn)
     return df
 
+@st.cache_data
+def get_clip_summary(_conn):
+    df = pd.read_sql("SELECT * FROM fct_clip_summary", _conn)
+    return df
 
