@@ -1,16 +1,18 @@
 import streamlit as st
-from dotenv import load_dotenv
 import os
 from sqlalchemy import create_engine
 import pandas as pd
 
-load_dotenv()
 
 @st.cache_resource
 def get_connection():
+    # Make AWS credentials available to boto3/pyathena via env vars
+    os.environ["AWS_ACCESS_KEY_ID"] = st.secrets["AWS_ACCESS_KEY_ID"]
+    os.environ["AWS_SECRET_ACCESS_KEY"] = st.secrets["AWS_SECRET_ACCESS_KEY"]
+    
     engine = create_engine(
-        f"awsathena+rest://:@athena.{os.getenv('AWS_REGION')}.amazonaws.com/bdd100k_dbt"
-        f"?s3_staging_dir=s3://{os.getenv('S3_BUCKET_NAME')}/athena-results/"
+        f"awsathena+rest://:@athena.{st.secrets['AWS_REGION']}.amazonaws.com/bdd100k_dbt"
+        f"?s3_staging_dir=s3://{st.secrets['S3_BUCKET_NAME']}/athena-results/"
     )
     return engine
 
