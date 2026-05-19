@@ -110,7 +110,6 @@ BDD100K JSONs (local)
      ├── Landing: dataset overview + project context
      ├── Coverage Analysis: heatmap + distribution charts with sidebar filtering
      └── Clip Explorer: 70K clips with multi-dimensional filtering, VRU metrics, QA table
-QA table
 ```
 ---
 
@@ -193,15 +192,15 @@ bdd100k-data-pipeline/
 │   ├── dbt_project.yml
 │   ├── packages.yml                # dbt-utils dependency
 │   └── models/
-│       ├── staging/                # stg_clips, stg_objects, stg_segmentations + sources YAML + models 
+│       ├── staging/                # stg_clips, stg_objects, stg_segmentations + sources/models YAML
+│       └── marts/                  # fct_clip_summary, fct_dataset_distribution
 ├── dashboard/
 │   ├── streamlit_app.py            # Landing page: dataset overview, page index, tech stack
 │   ├── queries.py                  # Cached Athena query functions (uses st.secrets for credentials)
 │   └── pages/
 │       ├── 1_Coverage.py           # Heatmap + distribution charts with dimension selector
 │       └── 2_Clip_Explorer.py      # Per-clip filtering, VRU section, QA candidates table
-YAML
-│       └── marts/                  # fct_clip_summary, fct_dataset_distribution
+├── main.py                         # Pipeline orchestrator (extract → validate → infra → dbt)
 ├── pyproject.toml
 └── uv.lock
 ```
