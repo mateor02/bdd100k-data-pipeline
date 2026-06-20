@@ -2,7 +2,7 @@
 
 **Live dashboard: [bdd100k-data-pipeline.streamlit.app](https://bdd100k-data-pipeline.streamlit.app/)**
 
-End-to-end ELT pipeline simulating a real-world labeling workflow for autonomous vehicle perception models. Built on the [BDD100K](https://www.vis.xyz/bdd100k/) dashcam dataset from UC Berkeley — 70K driving clips with detection, segmentation, and scene attribute labels.
+End-to-end ELT pipeline simulating a real-world labeling workflow for autonomous vehicle perception models. Built on the [BDD100K](https://bair.berkeley.edu/blog/2018/05/30/bdd/) dashcam dataset from UC Berkeley — 70K driving clips with detection, segmentation, and scene attribute labels.
 
 I currently work as a data labeler at Tesla, where I annotate ground-truth data that feeds Autopilot's training pipelines. The work made me genuinely curious about what happens to the data *after* it leaves my queue — how labeled clips get validated, transformed, cataloged, and surfaced as training and evaluation data. This project is my attempt to build that side of the pipeline myself, end-to-end. It covers only one slice (labeled clip metadata, not the raw video — yet), but it's been a great way to learn how the work I see every day fits into a larger system.
 
@@ -16,7 +16,7 @@ Each BDD100K clip is a single dashcam frame paired with a JSON file containing o
 
 ![Example annotated BDD100K frames](docs/annotation_examples.png)
 
-*Example BDD100K frames with labeled bounding boxes and segmentation polygons. Source: [BDD100K](https://www.vis.xyz/bdd100k/).*
+*Example BDD100K frames with labeled bounding boxes and segmentation polygons. Source: [BDD100K](https://bair.berkeley.edu/blog/2018/05/30/bdd/).*
 
 Here's an abridged version of what the raw JSON looks like — one object detection (a car), one lane line, and one drivable area:
 
